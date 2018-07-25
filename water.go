@@ -44,6 +44,20 @@ func routeOutput (w http.ResponseWriter, r *http.Request) {
 	    if err != nil {
 		    log.Println("error on: ", err)
 	    }
+	    // set a timer
+	    timer := time.NewTimer(10 * time.Minute)
+	    go func() {
+		    //wait for timer to expire, then redirect to off
+		log.Println("starting timer")
+		<-timer.C
+		log.Println("ending timer")
+	    	b := []byte{0xb1}
+	    	_, err := s.Write(b)
+	        if err != nil {
+		    log.Println("error off: ", err)
+	        }
+	    }()
+
 //      event.Data.Data = "on"
     case "off":
  //     event.Data.Data = "off"
@@ -98,8 +112,6 @@ func main() {
 	log.Fatal(err)
   }
   s = port
-  //Flush the line for good measure
-  s.Flush()
 
   // start reading from serial port
   go func() {
@@ -112,13 +124,7 @@ func main() {
  	      // handle eof 
 	      // try sleep and then flush
 	      fmt.Println("got eof")
-	      time.Sleep(time.Second * 3)
-	      err := s.Flush()
-	      if err != nil {
-		      log.Fatal(err)
-	      } else {
-	        log.Fatal(err)
-	      }
+	      log.Fatal(err)
 	  }
 	}
 	serialData = fmt.Sprintf("%s", buf[:n])
