@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   "io"
+  "os"
   "net/http"
   "html/template"
   "strconv"
@@ -76,6 +77,11 @@ func routeOutput (w http.ResponseWriter, r *http.Request) {
 
 
 func main() {
+  if len(os.Args) < 2 {
+	  log.Fatal("Usage: sudo ./water <server IP address>")
+  }
+  ipaddr := os.Args[1]
+
   // 
   // parse html template
   t = template.Must(template.ParseFiles("html/html-template.html"))
@@ -88,10 +94,13 @@ func main() {
 	ReadTimeout: time.Second,
 	}
   port, err := serial.OpenPort(c)
-  s = port
   if err != nil {
 	log.Fatal(err)
   }
+  s = port
+  //Flush the line for good measure
+  s.Flush()
+
   // start reading from serial port
   go func() {
   	for {
@@ -120,7 +129,7 @@ func main() {
 
 	router := mux.NewRouter()
 	/* change this to IP addr !! */
-	sub := router.Host("10.0.x.x").Subrouter()
+	sub := router.Host(ipaddr).Subrouter()
 	sub.PathPrefix("/html/").Handler(http.StripPrefix("/html/", http.FileServer(http.Dir("html"))))
 	sub.HandleFunc("/data", routeOutput)
 	sub.HandleFunc("/data/{q}", routeOutput)
@@ -133,7 +142,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 		Handler:      router,
 	}
-	fmt.Println("Server started at 10.0.x.x:8082")
+	fmt.Printf("Server started at %s:8082\n", ipaddr)
 	log.Fatal(server.ListenAndServe())
 
 }
